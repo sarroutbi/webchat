@@ -25,18 +25,16 @@ public class UserCreateChats implements Callable<Boolean> {
 			public void newChat(Chat chat) {
 			}
 		};
-		System.out.println("-- Adding user: " + Integer.toString(thrNum) + "--");
 		chatManager.newUser(chatUser);
 		// 2 - Repetir 5 veces:
 		for (int j = 0; j < chatsPerUser; j++) {
 			//     - Crear chat de nombre "chat" + iteración y registrar usuario en chat
-			System.out.println("-- User: " + Integer.toString(thrNum) + ", Creating new chat:" + "chat" + Integer.toString(j) + " --");
 			try {
 				Chat currentChat = chatManager.newChat("chat" + Integer.toString(j), 5, TimeUnit.SECONDS);
 				currentChat.addUser(chatUser);
 				//     - Mostrar por pantalla todos los usuarios de ese chat
 				for(User u : currentChat.getUsers()) {
-					System.out.println("-- User: " + Integer.toString(thrNum) + ", Chat:" + currentChat.getName() + " chat:" + u.getName() + " --");
+					System.out.println("-- Thread:" + Integer.toString(thrNum) + ", Chat:" + currentChat.getName() + " User in chat:" + u.getName() + " --");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
