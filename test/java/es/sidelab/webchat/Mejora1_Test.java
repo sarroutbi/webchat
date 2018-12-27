@@ -15,6 +15,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
 
+import es.codeurjc.webchat.Chat;
 import es.codeurjc.webchat.ChatManager;
 
 public class Mejora1_Test {
@@ -62,5 +63,13 @@ public class Mejora1_Test {
 				" chats in chat manager, but the value is "
 				+ chatManager.getChats().size(), CHATS_PER_USER,
 				chatManager.getChats().size());
+
+		// Asegurar que cada uno de los chats tiene todos los usuarios añadidos
+		for(Chat chat: chatManager.getChats()) {
+			assertEquals("There should be " + Integer.toString(THREAD_AMOUNT) +
+					" users in chat " + chat.getName() + " but the value is "
+					+ chat.getUsers().size(), THREAD_AMOUNT,
+					chat.getUsers().size());
+		}
 	}
 }

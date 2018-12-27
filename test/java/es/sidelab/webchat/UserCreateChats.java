@@ -1,6 +1,5 @@
 package es.sidelab.webchat;
 
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -21,11 +20,12 @@ public class UserCreateChats implements Callable<Boolean> {
 	}
 
 	public Boolean call() {
+		// 1 - Crear usuario y darlo de alta en el chat manager
 		TestUser chatUser = new TestUser("user" + Integer.toString(thrNum)) {
 			public void newChat(Chat chat) {
 			}
 		};
-		System.out.println("----- Adding user: " + Integer.toString(thrNum));
+		System.out.println("-- Adding user: " + Integer.toString(thrNum) + "--");
 		chatManager.newUser(chatUser);
 		// 2 - Repetir 5 veces:
 		for (int j = 0; j < chatsPerUser; j++) {
