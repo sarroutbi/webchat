@@ -1,6 +1,6 @@
 package es.sidelab.webchat;
 
-import java.util.ConcurrentModificationException;
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +23,6 @@ public class UserCreateChats implements Callable<Boolean> {
 	public Boolean call() {
 		TestUser chatUser = new TestUser("user" + Integer.toString(thrNum)) {
 			public void newChat(Chat chat) {
-				// TODO: Check what to do with chat 
 			}
 		};
 		System.out.println("----- Adding user: " + Integer.toString(thrNum));
@@ -37,7 +36,7 @@ public class UserCreateChats implements Callable<Boolean> {
 				currentChat.addUser(chatUser);
 				//     - Mostrar por pantalla todos los usuarios de ese chat
 				for(User u : currentChat.getUsers()) {
-					  System.out.println("-- User: " + Integer.toString(thrNum) + ", Chat:" + currentChat.getName() + " chat:" + u.getName() + " --");
+					System.out.println("-- User: " + Integer.toString(thrNum) + ", Chat:" + currentChat.getName() + " chat:" + u.getName() + " --");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
