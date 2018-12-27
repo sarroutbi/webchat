@@ -4,7 +4,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
 public class Chat {
 
@@ -60,8 +65,25 @@ public class Chat {
 
 	public void sendMessage(User user, String message) {
 		synchronized(users) {
-			for(User u : users.values()){
-				u.newMessage(this, user, message);
+			List<Future> futures = new ArrayList<Future>(users.size());
+			for(User u : users.values()) {
+				// For each user, create single thread and put message in the queue
+				ExecutorService exec = Executors.newSingleThreadExecutor();
+				Chat chat = this;
+				futures.add(exec.submit(new Runnable() {
+					public void run() {
+						u.newMessage(chat, user, message);
+					}
+				}));
+			}
+			for(Future future : futures) {
+				try {
+					while(future.get() != null);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
