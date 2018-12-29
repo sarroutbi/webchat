@@ -17,6 +17,7 @@ public class Mejora4_Test {
 	private final int MAX_CHATS = 10;
 	private final int MAX_USERS = 4;
 	private CountDownLatch latch = new CountDownLatch(MAX_USERS-1);
+	private int expectedMessage = 1;
 
 	@Test
 	public void GivenAChatWhenUserLastOneSecInPrintingAMessageThenLessThanOneSecondPerUserIsSpentDueToParallelism()
@@ -61,5 +62,54 @@ public class Mejora4_Test {
 		long elapsedTimeInMilliseconds = (endTime - startTime)/1000000;
 		assertTrue("Time elapsed was bigger that expected" + Long.toString(elapsedTimeInMilliseconds),
 				elapsedTimeInMilliseconds < 3000);
+	}
+
+	@Test
+	public void GivenAChatWithTwoUsersWhenUserSendsMessagesThenTheyAreReceivedInCorrectOrder()
+			throws InterruptedException, TimeoutException {
+
+		final int ORDER_TEST_USERS = 2;
+		final int MAX_MESSAGES = 5;
+
+		// Crear el chat Manager
+		ChatManager chatManager = new ChatManager(MAX_CHATS);
+		ArrayList<User> userList = new ArrayList<User>(2);
+
+		for (int i = 0; i < ORDER_TEST_USERS; i++) {
+			String userDesc = "user" + Integer.toString(i);
+			userList.add(new TestUser(userDesc) {
+				// Implement new message to user
+				@Override
+				public void newMessage(Chat chat, User user, String message) {
+					System.out.println("User:" + userDesc + ", new message '" + message + "' from user " + user.getName()
+							+ " in chat " + chat.getName());
+					try {
+						Thread.sleep(500);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					if(!message.equals(Integer.toString(expectedMessage))) {
+						// Notify to exchanger
+						System.out.println(" ---------------- ERROR ----------------");
+						System.out.println(" msg: " + message + " expected:" + expectedMessage);
+					}
+					expectedMessage++;
+				}
+			});
+			chatManager.newUser(userList.get(i));
+		};
+
+		Chat chat = chatManager.newChat("Chat", 5, TimeUnit.SECONDS);
+		for (int i = 0; i < ORDER_TEST_USERS; i++) {
+			chat.addUser(userList.get(i));
+		}
+
+		// Send N messages
+		for (int i = 1; i <= MAX_MESSAGES; i++) {
+			userList.get(1).newMessage(chat, userList.get(0), Integer.toString(i));
+		}
+
+		// Check Exchanger to assertTrue
+
 	}
 }
