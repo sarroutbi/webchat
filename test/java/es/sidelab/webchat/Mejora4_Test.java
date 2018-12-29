@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -17,7 +18,7 @@ public class Mejora4_Test {
 	private final int MAX_CHATS = 10;
 	private final int MAX_USERS = 4;
 	private CountDownLatch latch = new CountDownLatch(MAX_USERS-1);
-	private int expectedMessage = 1;
+	private Boolean orderError = new Boolean(false);
 
 	@Test
 	public void GivenAChatWhenUserLastOneSecInPrintingAMessageThenLessThanOneSecondPerUserIsSpentDueToParallelism()
@@ -70,6 +71,7 @@ public class Mejora4_Test {
 
 		final int ORDER_TEST_USERS = 2;
 		final int MAX_MESSAGES = 5;
+        Exchanger<Boolean> exchanger = new Exchanger<Boolean>();
 
 		// Crear el chat Manager
 		ChatManager chatManager = new ChatManager(MAX_CHATS);
@@ -78,6 +80,9 @@ public class Mejora4_Test {
 		for (int i = 0; i < ORDER_TEST_USERS; i++) {
 			String userDesc = "user" + Integer.toString(i);
 			userList.add(new TestUser(userDesc) {
+
+				private int expectedMessage = 1;
+
 				// Implement new message to user
 				@Override
 				public void newMessage(Chat chat, User user, String message) {
@@ -90,8 +95,20 @@ public class Mejora4_Test {
 					}
 					if(!message.equals(Integer.toString(expectedMessage))) {
 						// Notify to exchanger
-						System.out.println(" ---------------- ERROR ----------------");
+						System.out.println(" ---------------- ORDER ERROR ----------------");
 						System.out.println(" msg: " + message + " expected:" + expectedMessage);
+						try {
+							orderError = exchanger.exchange(new Boolean(true));
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					} else if(expectedMessage == MAX_MESSAGES) {
+							try {
+								exchanger.exchange(new Boolean(false));
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
 					}
 					expectedMessage++;
 				}
@@ -106,10 +123,8 @@ public class Mejora4_Test {
 
 		// Send N messages
 		for (int i = 1; i <= MAX_MESSAGES; i++) {
-			userList.get(1).newMessage(chat, userList.get(0), Integer.toString(i));
+			chat.sendMessage(userList.get(0), Integer.toString(i));
 		}
-
-		// Check Exchanger to assertTrue
-
+		assertTrue("Detected order error", orderError == false);
 	}
 }
