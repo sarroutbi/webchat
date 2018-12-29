@@ -89,6 +89,8 @@ public class Chat {
 	}
 
 	public void close() {
-		this.chatManager.closeChat(this);
+		synchronized(this) {
+			this.chatManager.closeChat(this);
+		}
 	}
 }
