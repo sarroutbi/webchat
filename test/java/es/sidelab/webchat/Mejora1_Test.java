@@ -24,7 +24,7 @@ public class Mejora1_Test {
 	private final int CHATS_PER_USER = 5;
 	private ChatManager chatManager = new ChatManager(MAX_CHAT_NUMBER);
 	
-	// dummy helper to create a List of Callables return a String
+	// dummy helper
 	public List<Callable<Boolean>> createCallableList(int size) {
 		List<Callable<Boolean>> callables = new ArrayList<>();
 		for (int i = 0; i < size; i++) {
@@ -32,6 +32,7 @@ public class Mejora1_Test {
 		}
 		return callables;
 	}
+
 	@Test
 	public void GivenAChatManagerWhenMultipleUsersAreRegisteredThenNoConcurrenceError()
 			throws InterruptedException, TimeoutException {	
