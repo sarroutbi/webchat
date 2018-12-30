@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 
 import org.junit.Test;
 
+import es.codeurjc.webchat.Chat;
 import es.codeurjc.webchat.ChatManager;
 
 public class Mejora5_Test {
@@ -35,6 +36,16 @@ public class Mejora5_Test {
 		List<Callable<Boolean>> callables = new ArrayList<>();
 		for (int i = 0; i < users_amount; i++) {
 			callables.add(new UserDeleteChat(chat_manager, chat_amount));
+		}
+		return callables;
+	}
+
+	// dummy helper
+	public List<Callable<Boolean>> createUniqueChatCallableList(ChatManager chat_manager,
+			int users_amount, int users_in_chat) {
+		List<Callable<Boolean>> callables = new ArrayList<>();
+		for (int i = 0; i < users_amount; i++) {
+			callables.add(new UserCreateChatWithMultipleUsers(chat_manager, users_in_chat));
 		}
 		return callables;
 	}
@@ -123,17 +134,51 @@ public class Mejora5_Test {
 	}
 
 	@Test
-	public void GivenAnExistingChatWhenUserIsRegisteredThenNoErrorOccursAndRestOfUsersAreNotified() {
+	public void GivenAnExistingChatWhenUserIsRegisteredThenNoErrorOccurs() {
+		final int THREAD_AMOUNT = 2;
+		final int USERS_PER_CHAT = 5;
+		ChatManager chat_manager = new ChatManager(MAX_CHAT_NUMBER);
+
+		// 2 hilos para crear 1 chat por hilo
+		ExecutorService executorService = Executors.newFixedThreadPool(THREAD_AMOUNT);
+		CompletionService<Boolean> taskCompletionService = new ExecutorCompletionService<Boolean>(
+				executorService);
+		try {
+			List<Callable<Boolean>> callables =
+					createUniqueChatCallableList(chat_manager, THREAD_AMOUNT, USERS_PER_CHAT);
+			for (Callable<Boolean> callable : callables) {
+				taskCompletionService.submit(callable);
+			}
+			for (int i = 0; i < callables.size(); i++) {
+				Future<Boolean> result = taskCompletionService.take();
+				assertTrue("Task: " + Integer.toString(i) +
+						" should have been completed correctly, but it has not", result.get());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		executorService.shutdown();
+
+		// Asegurar que hay un par de chats en el chat manager, y dichos chat tienen
+		// ambos el número de usuarios esperado
+		assertEquals("There should be " + THREAD_AMOUNT + " chats in chat manager, but the value is " +
+				chat_manager.getChats().size(),
+				chat_manager.getChats().size(), THREAD_AMOUNT);
+		for(Chat chat : chat_manager.getChats()) {
+			assertEquals("There should be " + chat.getUsers().size() +
+					" users in chat " + chat.getName() + ", but the value is " +
+					chat.getUsers().size(),
+					chat.getUsers().size(), USERS_PER_CHAT);
+		}
+	}
+
+	@Test
+	public void GivenAnExistingChatWhenUserExitsThenNoErrorOccurs() {
 
 	}
 
 	@Test
-	public void GivenAnExistingChatWhenUserExitsThenNoErrorOccursAndRestOfUsersAreNotified() {
-
-	}
-
-	@Test
-	public void GivenAnExistingChatWhenUserSendsMessageThenNoErrorOccursAndRestOfUsersAreNotified() {
+	public void GivenAnExistingChatWhenUserSendsMessageThenNoErrorOccurs() {
 
 	}
 
