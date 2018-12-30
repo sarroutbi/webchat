@@ -32,10 +32,10 @@ public class Mejora5_Test {
 
 	// dummy helper
 	public List<Callable<Boolean>> removeChatCallableList(ChatManager chat_manager,
-			int users_amount, int chat_amount) {
+			int users_amount) {
 		List<Callable<Boolean>> callables = new ArrayList<>();
 		for (int i = 0; i < users_amount; i++) {
-			callables.add(new UserDeleteChat(chat_manager, chat_amount));
+			callables.add(new UserDeleteChat(chat_manager));
 		}
 		return callables;
 	}
@@ -46,6 +46,16 @@ public class Mejora5_Test {
 		List<Callable<Boolean>> callables = new ArrayList<>();
 		for (int i = 0; i < users_amount; i++) {
 			callables.add(new UserCreateChatWithMultipleUsers(chat_manager, users_in_chat));
+		}
+		return callables;
+	}
+
+	// dummy helper
+	public List<Callable<Boolean>> createUniqueChatAndRemoveOneUserCallableList(ChatManager chat_manager,
+			int users_amount, int users_in_chat) {
+		List<Callable<Boolean>> callables = new ArrayList<>();
+		for (int i = 0; i < users_amount; i++) {
+			callables.add(new UserCreateChatWithMultipleUsersAndOneIsRemoved(chat_manager, users_in_chat));
 		}
 		return callables;
 	}
@@ -114,7 +124,7 @@ public class Mejora5_Test {
 		CompletionService<Boolean> taskDeletionService = new ExecutorCompletionService<Boolean>(
 				executorDeletionService);
 		try {
-			List<Callable<Boolean>> callables = removeChatCallableList(chatManager, THREAD_AMOUNT, CHATS_PER_USER);
+			List<Callable<Boolean>> callables = removeChatCallableList(chatManager, THREAD_AMOUNT);
 			for (Callable<Boolean> callable : callables) {
 				taskDeletionService.submit(callable);
 			}
@@ -127,10 +137,10 @@ public class Mejora5_Test {
 		}
 		executorDeletionService.shutdown();
 
-		// Asegurar que no quedan chats en el chat manager
-		assertEquals("There should not be chats in chat manager, but the value is " +
+		// Asegurar que quedan los chats correspondientes en el chat manager
+		assertEquals("There should be chats in chat manager, but the value is " +
 				chatManager.getChats().size(),
-				chatManager.getChats().size(), 0);
+				chatManager.getChats().size(), CHATS_PER_USER-1);
 	}
 
 	@Test
@@ -174,6 +184,37 @@ public class Mejora5_Test {
 
 	@Test
 	public void GivenAnExistingChatWhenUserExitsThenNoErrorOccurs() {
+		final int THREAD_AMOUNT = 2;
+		final int USERS_PER_CHAT = 3;
+		ChatManager chat_manager = new ChatManager(MAX_CHAT_NUMBER);
+
+		// Crear 1 chat y eliminar un usuario
+		ExecutorService executorService = Executors.newFixedThreadPool(THREAD_AMOUNT);
+		CompletionService<Boolean> taskCompletionService = new ExecutorCompletionService<Boolean>(
+				executorService);
+		try {
+			List<Callable<Boolean>> callables =
+					createUniqueChatAndRemoveOneUserCallableList(chat_manager, THREAD_AMOUNT, USERS_PER_CHAT);
+			for (Callable<Boolean> callable : callables) {
+				taskCompletionService.submit(callable);
+			}
+			for (int i = 0; i < callables.size(); i++) {
+				Future<Boolean> result = taskCompletionService.take();
+				assertTrue("Task: " + Integer.toString(i) +
+						" should have been completed correctly, but it has not", result.get());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		executorService.shutdown();
+
+		// Asegurar que hay un usuario menos por chat
+		for(Chat chat : chat_manager.getChats()) {
+			assertEquals("There should be " + Integer.toString(USERS_PER_CHAT-1) +
+					" users in chat " + chat.getName() + ", but the value is " +
+					chat.getUsers().size(),
+					chat.getUsers().size(), USERS_PER_CHAT-1);
+		}
 
 	}
 
