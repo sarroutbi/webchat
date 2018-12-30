@@ -14,11 +14,7 @@ import java.util.concurrent.ExecutorService;
 public class Chat {
 
 	private String name;
-	
-	// Estructura de datos original:
-	// private Map<String, User> users = new HashMap<>();
 	private Map<String, User> users = Collections.synchronizedMap(new HashMap<>());
-
 	private ChatManager chatManager;
 
 	public Chat(ChatManager chatManager, String name) {
@@ -90,7 +86,9 @@ public class Chat {
 
 	public void close() {
 		synchronized(this) {
-			this.chatManager.closeChat(this);
+			synchronized(this.chatManager) {
+				this.chatManager.closeChat(this);
+			}
 		}
 	}
 }

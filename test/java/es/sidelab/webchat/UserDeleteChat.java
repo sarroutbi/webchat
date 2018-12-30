@@ -13,10 +13,14 @@ public class UserDeleteChat implements Callable<Boolean>{
 
 	public Boolean call() {
 		try {
-			Chat currentChat = chatManager.getChat("chat0");
-			// Chat can have been closed by other thread ...
-			if(currentChat != null) {
-				chatManager.closeChat(currentChat);
+			// El mismo chat puede quererse borrar desde dos hilos
+			// por lo que se deja en exclusión mutua la lectura
+			// y su borrado
+			synchronized(chatManager) {
+				Chat currentChat = chatManager.getChat("chat0");
+				if(currentChat != null) {
+					chatManager.closeChat(currentChat);
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
