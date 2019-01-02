@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ChatManager {
 
@@ -32,9 +34,30 @@ public class ChatManager {
 
 	public Chat newChat(String name, long timeout, TimeUnit unit) throws InterruptedException,
 			TimeoutException {
+		Lock lock = new ReentrantLock(true);
+		lock.lock();
+		if (chats.size() == maxChats) {
+			lock.unlock();
+			boolean hopDetectedInTimeout = false;
+			// Wait until timeout expires before throwing exception ...
+			// Measure time
+			long startTime = System.nanoTime();
 
-		synchronized(chats) {
-			if (chats.size() == maxChats) {
+			long elapsedTimeInMilliseconds = 0;
+			do {
+				// Measure time after all users have called newMessage
+				long endTime = System.nanoTime();
+				elapsedTimeInMilliseconds = (endTime - startTime)/1_000_000;
+				lock.lock();
+				if(chats.size() < maxChats) {
+					hopDetectedInTimeout = true;
+					lock.unlock();
+					break;
+				}
+				lock.unlock();
+				Thread.sleep(1);
+			} while(elapsedTimeInMilliseconds < unit.toMillis(timeout));
+			if(!hopDetectedInTimeout) {
 				throw new TimeoutException("There is no enought capacity to create a new chat");
 			}
 		}
